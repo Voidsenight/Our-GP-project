@@ -55,8 +55,8 @@ export const handleClerkWebhook = async (req: Request, res: Response) => {
   const eventType = evt.type;
 
   if (eventType === "user.created" || eventType === "user.updated") {
-    const email = evt.data.email_addresses[0].email_address;
-    const name = `${evt.data.first_name} ${evt.data.last_name}`.trim();
+    const email = evt.data.email_addresses?.[0]?.email_address || "";
+    const name = `${evt.data.first_name || ""} ${evt.data.last_name || ""}`.trim();
     const role = evt.data.public_metadata?.role || "student"; // Default to student if not set
     const permissions = ROLE_PERMISSIONS[role] || [];
 

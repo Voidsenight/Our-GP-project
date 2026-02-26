@@ -97,8 +97,14 @@ export const submitQuiz = async (req: Request, res: Response) => {
     let score = 0;
     const totalQuestions = quiz.questions.length;
     const resultAnswers = [];
+    const processedQuestions = new Set<number>();
 
     for (const ans of answers) {
+      if (processedQuestions.has(ans.questionIndex)) {
+        continue; // Prevent submitting multiple answers for the same question
+      }
+      processedQuestions.add(ans.questionIndex);
+
       const question = quiz.questions[ans.questionIndex];
       if (!question) {
         continue; // Skip invalid questions

@@ -26,7 +26,7 @@ export default function Home() {
         <UserButton />
       </div>
       <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full text-center">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">This is an edit, piss</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Restricted</h1>
         <p className="text-gray-600 mb-6">
           Welcome, {user?.firstName}.<br />
           Please sign in with a <strong>Teacher</strong> account to access this dashboard.

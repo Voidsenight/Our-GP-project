@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route } from 'react-router-dom'
 import { SignedIn, SignedOut, SignIn, SignUp, useOrganization, OrganizationSwitcher, Protect, UserButton, useAuth, AuthenticateWithRedirectCallback } from '@clerk/clerk-react'
 import StudentDashboard from './components/dashboard/StudentDashboard'
 import { useEffect } from 'react'
@@ -6,7 +6,9 @@ import axios from 'axios'
 
 function HelloUser() {
   const { organization, isLoaded } = useOrganization();
-  const { getToken, userId } = useAuth();
+  const { getToken, userId, orgRole } = useAuth();
+
+  const hasRecognizedRole = ['org:student', 'org:teacher', 'org:parent'].includes(orgRole as string);
 
   useEffect(() => {
     const syncUser = async () => {
@@ -14,7 +16,7 @@ function HelloUser() {
         try {
           const token = await getToken();
           await axios.post('http://localhost:5000/api/student/sync', {}, {
-             headers: { Authorization: `Bearer ${token}` }
+            headers: { Authorization: `Bearer ${token}` }
           });
           console.log("User synced with MongoDB");
         } catch (error) {
@@ -22,7 +24,7 @@ function HelloUser() {
         }
       }
     };
-    
+
     syncUser();
   }, [userId, getToken]);
 
@@ -64,8 +66,8 @@ function HelloUser() {
       <Protect role="org:teacher">
         <div className="flex flex-col items-center justify-center h-full p-4 text-center bg-gray-50">
           <div className="absolute top-4 right-4 flex items-center gap-4">
-             <OrganizationSwitcher afterCreateOrganizationUrl="/" />
-             <UserButton />
+            <OrganizationSwitcher afterCreateOrganizationUrl="/" />
+            <UserButton />
           </div>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Teacher Access</h2>
           <p className="text-gray-600 mb-4">
@@ -80,64 +82,31 @@ function HelloUser() {
       <Protect role="org:parent">
         <div className="flex flex-col items-center justify-center h-full p-4 text-center bg-gray-50">
           <div className="absolute top-4 right-4 flex items-center gap-4">
-             <OrganizationSwitcher afterCreateOrganizationUrl="/" />
-             <UserButton />
+            <OrganizationSwitcher afterCreateOrganizationUrl="/" />
+            <UserButton />
           </div>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Parent Access</h2>
           <p className="text-gray-600 mb-4">
             This application is designed for Students.
           </p>
-           <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200 text-yellow-800">
+          <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200 text-yellow-800">
             Please use the <strong>Parent App</strong> (parent-reactNative) to monitor your child's progress.
           </div>
         </div>
       </Protect>
 
       {/* Fallback for users with no matching role in the organization */}
-      <Protect fallback={
-         <div className="flex flex-col items-center justify-center h-full p-4 text-center bg-gray-50">
-           <div className="absolute top-4 right-4 flex items-center gap-4">
-              <OrganizationSwitcher afterCreateOrganizationUrl="/" />
-              <UserButton />
-           </div>
-           <h2 className="text-xl font-semibold text-gray-700 mb-2">Access Restricted</h2>
-           <p className="text-gray-500">You are a member of <strong>{organization.name}</strong> but do not have a recognized role (Student, Teacher, or Parent).</p>
-           <p className="text-sm text-gray-400 mt-2">Please contact your organization administrator.</p>
-         </div>
-      }>
-        {/* Empty children because permissions are handled by role-specific Protects above. 
-            Wait, if a user HAS a role, say org:student, the first Protect renders.
-            Does the last Protect render too?
-            If user has `org:student`, they have *some* role.
-            Protect with NO props usually checks if authenticated. Yes, they are.
-            So it renders its children (Empty).
-            It doesn't "fall back" if other protects rendered.
-            
-            This structure is problematic if multiple Protects are independent.
-            But we want exclusive rendering.
-            
-            Better approach: 
-            Check roles manually with `useUser` or `useAuth` helpers? 
-            Or rely on `Protect` rendering logic.
-            
-            If I wrap all role-specific logic inside a component that checks for roles?
-            Or simpler: Just use conditional rendering based on `user.organizationMemberships`.
-            
-            Actually, Clerk's `Protect` component only renders children if the condition is met.
-            If I have 3 sequential Protects, if user has ALL roles (unlikely but possible), all 3 render.
-            If user has ONE role, only that one renders.
-            
-            The issue is the "Fallback" case where NONE match.
-            We can't easily express "If none of the above" with declarative components unless nested or using logic.
-            
-            Let's use `has()` from `useAuth`? No, `useAuth` has `has`.
-            
-            Let's try to keep it declarative for now but remove the confusing "Fallback" Protect at the end entirely.
-            If they have no role, they just see a blank screen? That's bad.
-            
-            Let's use a helper function to determine the view.
-        */}
-      </Protect>
+      {!hasRecognizedRole && (
+        <div className="flex flex-col items-center justify-center h-full p-4 text-center bg-gray-50">
+          <div className="absolute top-4 right-4 flex items-center gap-4">
+            <OrganizationSwitcher afterCreateOrganizationUrl="/" />
+            <UserButton />
+          </div>
+          <h2 className="text-xl font-semibold text-gray-700 mb-2">Access Restricted</h2>
+          <p className="text-gray-500">You are a member of <strong>{organization.name}</strong> but do not have a recognized role (Student, Teacher, or Parent).</p>
+          <p className="text-sm text-gray-400 mt-2">Please contact your organization administrator.</p>
+        </div>
+      )}
     </div>
   )
 }
